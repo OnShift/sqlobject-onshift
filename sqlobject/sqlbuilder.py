@@ -863,19 +863,22 @@ def NOTIN(item, list):
         return NOT(_IN(item, list))
 
 def STARTSWITH(expr, pattern):
-    return LIKE(expr, _LikeQuoted(pattern) + '%', escape='\\')
+    return LIKE(expr, _LikeQuoted(pattern) + '%')#, escape='\\')
 
 def ENDSWITH(expr, pattern):
-    return LIKE(expr, '%' + _LikeQuoted(pattern), escape='\\')
+    return LIKE(expr, '%' + _LikeQuoted(pattern))#, escape='\\')
 
 def CONTAINSSTRING(expr, pattern):
-    return LIKE(expr, '%' + _LikeQuoted(pattern) + '%', escape='\\')
+    return LIKE(expr, '%' + _LikeQuoted(pattern))# + '%', escape='\\')
 
 def ISNULL(expr):
     return SQLOp("IS", expr, None)
 
 def ISNOTNULL(expr):
     return SQLOp("IS NOT", expr, None)
+
+def OVERLAPS(timetuple1, timetuple2):
+    return SQLOp("OVERLAPS", timetuple1, timetuple2)
 
 class ColumnAS(SQLOp):
     ''' Just like SQLOp('AS', expr, name) except without the parentheses '''
