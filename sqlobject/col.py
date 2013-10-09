@@ -35,6 +35,7 @@ from classregistry import findClass
 import constraints as constrs
 import sqlbuilder
 from styles import capword
+import pghstore
 
 NoDefault = sqlbuilder.NoDefault
 
@@ -1642,6 +1643,32 @@ class SOPickleCol(SOBLOBCol):
 class PickleCol(BLOBCol):
     baseClass = SOPickleCol
 
+
+class HStoreValidator(validators.Validator):
+
+    def to_python(self, value, state):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return pghstore.loads(value)
+        if isinstance(value, dict):
+            return value
+
+    def from_python(self, value, state):
+        if value is None:
+            return None
+        else:
+            return pghstore.dumps(value)
+
+class SOHStoreCol(SOCol):
+    def _sqlType(self):
+        return 'HSTORE'
+
+    def createValidators(self):
+        return [HStoreValidator(name=self.name)] + super(SOHStoreCol, self).createValidators()
+
+class HStoreCol(Col):
+    baseClass = SOHStoreCol
 
 def pushKey(kw, name, value):
     if not name in kw:
