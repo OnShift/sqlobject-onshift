@@ -869,7 +869,7 @@ def ENDSWITH(expr, pattern):
     return LIKE(expr, '%' + _LikeQuoted(pattern))#, escape='\\')
 
 def CONTAINSSTRING(expr, pattern):
-    return LIKE(expr, '%' + _LikeQuoted(pattern))# + '%', escape='\\')
+    return LIKE(expr, '%' + _LikeQuoted(pattern) + '%')#, escape='\\')
 
 def ISNULL(expr):
     return SQLOp("IS", expr, None)
