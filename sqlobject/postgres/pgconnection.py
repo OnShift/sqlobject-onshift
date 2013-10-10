@@ -9,7 +9,10 @@ class ErrorMessage(str):
     def __new__(cls, e):
         obj = str.__new__(cls, e[0])
         obj.code = None
-        obj.module = e.__module__
+        if hasattr(e, '__module__'):
+            obj.module = e.__module__
+        else:
+            obj.module = None
         obj.exception = e.__class__.__name__
         return obj
 
