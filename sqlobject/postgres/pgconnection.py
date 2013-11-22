@@ -7,7 +7,7 @@ from sqlobject.dberrors import *
 
 class ErrorMessage(str):
     def __new__(cls, e):
-        obj = str.__new__(cls, e[0])
+        obj = str.__new__(cls, str(e))
         obj.code = None
         if hasattr(e, '__module__'):
             obj.module = e.__module__
