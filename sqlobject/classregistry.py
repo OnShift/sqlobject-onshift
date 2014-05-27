@@ -80,7 +80,7 @@ class ClassRegistry(object):
             other = self.classes[cls.__name__]
             if other.__module__ == cls.__module__:
                 # If the modules match, then ignore the addClass call without
-                # error. Why error out when all we already have what we want?
+                # error. Why error out when we already have what we want?
                 pass
             else:
                 raise ValueError(
