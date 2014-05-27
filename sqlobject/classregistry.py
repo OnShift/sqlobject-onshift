@@ -78,17 +78,22 @@ class ClassRegistry(object):
         if cls.__name__ in self.classes:
             import sys
             other = self.classes[cls.__name__]
-            raise ValueError(
-                "class %s is already in the registry (other class is "
-                "%r, from the module %s in %s; attempted new class is "
-                "%r, from the module %s in %s)"
-                % (cls.__name__,
-                   other, other.__module__,
-                   getattr(sys.modules.get(other.__module__),
-                           '__file__', '(unknown)'),
-                   cls, cls.__module__,
-                   getattr(sys.modules.get(cls.__module__),
-                           '__file__', '(unknown)')))
+            if other.__module__ == cls.__module__:
+                # If the modules match, then ignore the addClass call without
+                # error. Why error out when all we already have what we want?
+                pass
+            else:
+                raise ValueError(
+                    "class %s is already in the registry (other class is "
+                    "%r, from the module %s in %s; attempted new class is "
+                    "%r, from the module %s in %s)"
+                    % (cls.__name__,
+                       other, other.__module__,
+                       getattr(sys.modules.get(other.__module__),
+                               '__file__', '(unknown)'),
+                       cls, cls.__module__,
+                       getattr(sys.modules.get(cls.__module__),
+                               '__file__', '(unknown)')))
         self.classes[cls.__name__] = cls
         if cls.__name__ in self.callbacks:
             for callback, args, kw in self.callbacks[cls.__name__]:
