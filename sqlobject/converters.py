@@ -197,7 +197,10 @@ def TimedeltaConverter(value, db):
         modifiers.append('%s seconds' % value.seconds)
     if value.microseconds:
         modifiers.append('%s microseconds' % value.microseconds)
-    mods = ' '.join(modifiers)
+    if not modifiers:
+        mods = '0'
+    else:
+        mods = ' '.join(modifiers)
 
     return """INTERVAL '%s'""" % mods
 
