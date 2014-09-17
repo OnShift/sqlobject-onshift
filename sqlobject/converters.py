@@ -190,9 +190,16 @@ def DecimalConverter(value, db):
 registerConverter(Decimal, DecimalConverter)
 
 def TimedeltaConverter(value, db):
+    modifiers = []
+    if value.days:
+        modifiers.append('%s days' % value.days)
+    if value.seconds:
+        modifiers.append('%s seconds' % value.seconds)
+    if value.microseconds:
+        modifiers.append('%s microseconds' % value.microseconds)
+    mods = ' '.join(modifiers)
 
-    return """INTERVAL '%d days %d seconds'""" % \
-        (value.days, value.seconds)
+    return """INTERVAL '%s'""" % mods
 
 registerConverter(datetime.timedelta, TimedeltaConverter)
 
