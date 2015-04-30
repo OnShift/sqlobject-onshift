@@ -33,6 +33,7 @@ import constraints as constrs
 import sqlbuilder
 from styles import capword
 import pghstore
+import json
 
 NoDefault = sqlbuilder.NoDefault
 
@@ -1632,6 +1633,69 @@ class SOHStoreCol(SOCol):
 
 class HStoreCol(Col):
     baseClass = SOHStoreCol
+
+
+# JSON
+class JSONValidator(validators.Validator):
+
+    def to_python(self, value, state):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return json.loads(value)
+        if isinstance(value, dict):
+            return value
+
+    def from_python(self, value, state):
+        if value is None:
+            return None
+        else:
+            return json.dumps(value)
+
+
+class SOJSONCol(SOCol):
+    def _sqlType(self):
+        return 'JSON'
+
+    def createValidators(self):
+        return [JSONValidator(name=self.name)] + super(
+            SOJSONCol, self).createValidators()
+
+
+class JSONCol(Col):
+    baseClass = SOJSONCol
+
+
+# JSONB
+class JSONBValidator(validators.Validator):
+
+    def to_python(self, value, state):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return json.loads(value)
+        if isinstance(value, dict):
+            return value
+
+    def from_python(self, value, state):
+        if value is None:
+            return None
+        else:
+            return json.dumps(value)
+
+
+class SOJSONBCol(SOCol):
+    def _sqlType(self):
+        return 'JSONB'
+
+    def createValidators(self):
+        return [JSONBValidator(name=self.name)] + super(
+            SOJSONBCol, self).createValidators()
+
+
+class JSONBCol(Col):
+    baseClass = SOJSONBCol
+
 
 def pushKey(kw, name, value):
     if not name in kw:
