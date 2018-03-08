@@ -1,3 +1,5 @@
+from sqlobject import events
+
 from sqlobject import *
 from sqlobject.tests.dbtest import *
 
@@ -11,7 +13,23 @@ class TestSOTrans(SQLObject):
         defaultOrder = 'name'
     name = StringCol(length=10, alternateID=True, dbName='name_col')
 
+
+def make_watcher():
+    log = []
+    def watch(*args):
+        log.append(args)
+    watch.log = log
+    return watch
+
+
+def make_listen(signal):
+    watcher = make_watcher()
+    events.listen(watcher, sqlmeta, signal)
+    return watcher
+
+
 def test_transaction():
+    watcher = make_listen(events.CommitSignal)
     if not supports('transactions'):
         return
     setupClass(TestSOTrans)
@@ -28,6 +46,11 @@ def test_transaction():
         b = TestSOTrans.byName('bob', connection=trans)
         b.name = 'robert'
         trans.commit()
+
+        assert len(watcher.log) == 1
+        assert watcher.log[0][0][0][0] == 'TestSOTrans'
+        assert watcher.log[0][0][0][1] == [1, 2]
+
         assert b.name == 'robert'
         b.name = 'bob'
         trans.rollback()
@@ -35,6 +58,7 @@ def test_transaction():
         assert b.name == 'robert'
     finally:
         TestSOTrans._connection.autoCommit = True
+
 
 def test_transaction_commit_sync():
     if not supports('transactions'):
@@ -51,6 +75,7 @@ def test_transaction_commit_sync():
         assert bOut.name == 'robert'
     finally:
         TestSOTrans._connection.autoCommit = True
+
 
 def test_transaction_delete(close=False):
     if not supports('transactions'):
@@ -72,6 +97,7 @@ def test_transaction_delete(close=False):
     finally:
         trans.rollback()
         TestSOTrans._connection.autoCommit = True
+
 
 def test_transaction_delete_with_close():
     test_transaction_delete(close=True)

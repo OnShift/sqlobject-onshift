@@ -1,5 +1,6 @@
 import atexit
 from cgi import parse_qsl
+import events
 import inspect
 import new
 import os
@@ -800,12 +801,19 @@ class Transaction(object):
             return
         if self._dbConnection.debug:
             self._dbConnection.printDebug(self._connection, '', 'COMMIT')
+
+        sub_caches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
+        if sub_caches:
+            events.send(events.CommitSignal, main.sqlmeta, sub_caches)
+
         self._connection.commit()
+
         subCaches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
         subCaches.extend([(x[0], x[1]) for x in self._deletedCache.items()])
         for cls, ids in subCaches:
             for id in ids:
                 inst = self._dbConnection.cache.tryGetByName(id, cls)
+                # log.info('test test test555: ' + str(inst))
                 if inst is not None:
                     inst.expire()
         if close:
@@ -817,6 +825,11 @@ class Transaction(object):
             return
         if self._dbConnection.debug:
             self._dbConnection.printDebug(self._connection, '', 'ROLLBACK')
+
+        sub_caches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
+        if sub_caches:
+            events.send(events.RollbackSignal, main.sqlmeta, sub_caches)
+
         subCaches = [(sub, sub.allIDs()) for sub in self.cache.allSubCaches()]
         self._connection.rollback()
 
