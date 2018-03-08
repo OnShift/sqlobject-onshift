@@ -801,11 +801,7 @@ class Transaction(object):
             return
         if self._dbConnection.debug:
             self._dbConnection.printDebug(self._connection, '', 'COMMIT')
-
-        sub_caches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
-        if sub_caches:
-            events.send(events.CommitSignal, main.sqlmeta, sub_caches)
-
+        self._send_event(events.CommitSignal)
         self._connection.commit()
 
         subCaches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
@@ -813,7 +809,6 @@ class Transaction(object):
         for cls, ids in subCaches:
             for id in ids:
                 inst = self._dbConnection.cache.tryGetByName(id, cls)
-                # log.info('test test test555: ' + str(inst))
                 if inst is not None:
                     inst.expire()
         if close:
@@ -825,11 +820,7 @@ class Transaction(object):
             return
         if self._dbConnection.debug:
             self._dbConnection.printDebug(self._connection, '', 'ROLLBACK')
-
-        sub_caches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
-        if sub_caches:
-            events.send(events.RollbackSignal, main.sqlmeta, sub_caches)
-
+        self._send_event(events.RollbackSignal)
         subCaches = [(sub, sub.allIDs()) for sub in self.cache.allSubCaches()]
         self._connection.rollback()
 
@@ -839,6 +830,11 @@ class Transaction(object):
                 if inst is not None:
                     inst.expire()
         self._makeObsolete()
+
+    def _send_event(self, signal):
+        sub_caches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
+        if sub_caches:
+            events.send(signal, main.sqlmeta, sub_caches)
 
     def __getattr__(self, attr):
         """
