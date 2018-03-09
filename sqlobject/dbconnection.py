@@ -1,5 +1,6 @@
 import atexit
 from cgi import parse_qsl
+import events
 import inspect
 import new
 import os
@@ -800,7 +801,9 @@ class Transaction(object):
             return
         if self._dbConnection.debug:
             self._dbConnection.printDebug(self._connection, '', 'COMMIT')
+        self._send_event(events.CommitSignal)
         self._connection.commit()
+
         subCaches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
         subCaches.extend([(x[0], x[1]) for x in self._deletedCache.items()])
         for cls, ids in subCaches:
@@ -817,6 +820,7 @@ class Transaction(object):
             return
         if self._dbConnection.debug:
             self._dbConnection.printDebug(self._connection, '', 'ROLLBACK')
+        self._send_event(events.RollbackSignal)
         subCaches = [(sub, sub.allIDs()) for sub in self.cache.allSubCaches()]
         self._connection.rollback()
 
@@ -826,6 +830,16 @@ class Transaction(object):
                 if inst is not None:
                     inst.expire()
         self._makeObsolete()
+
+    def _send_event(self, signal):
+        """
+        Pushes a list of class_names and related ids in cache.
+        :param signal: Type of event signal to use
+        """
+        cached_classes_and_ids = [(class_name, cache.allIDs()) for class_name, cache in
+                                  self.cache.allSubCachesByClassNames().items()]
+        if cached_classes_and_ids:
+            events.send(signal, main.sqlmeta, cached_classes_and_ids)
 
     def __getattr__(self, attr):
         """
