@@ -832,9 +832,14 @@ class Transaction(object):
         self._makeObsolete()
 
     def _send_event(self, signal):
-        sub_caches = [(sub[0], sub[1].allIDs()) for sub in self.cache.allSubCachesByClassNames().items()]
-        if sub_caches:
-            events.send(signal, main.sqlmeta, sub_caches)
+        """
+        Pushes a list of class_names and related ids in cache.
+        :param signal: Type of event signal to use
+        """
+        cached_classes_and_ids = [(class_name, cache.allIDs()) for class_name, cache in
+                                  self.cache.allSubCachesByClassNames().items()]
+        if cached_classes_and_ids:
+            events.send(signal, main.sqlmeta, cached_classes_and_ids)
 
     def __getattr__(self, attr):
         """
