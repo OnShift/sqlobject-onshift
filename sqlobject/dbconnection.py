@@ -335,8 +335,7 @@ class DBAPI(DBConnection):
             return self.getPooledConnection()
         else:
             conn = self.makeConnection()
-            if self.debug:
-                print("POOLING DISABLED - CREATING CONNECTION")
+            print("POOLING DISABLED - CREATING CONNECTION")
             return conn
 
     def getPooledConnection(self):
@@ -348,11 +347,13 @@ class DBAPI(DBConnection):
                 self._connectionNumbers[id(conn)] = self._connectionCount
                 self._connectionCount += 1
             else:
+                print("")
+                print("===========================================")
                 print("POOLING ENABLED - USING EXISTING CONNECTION")
-                print("                  CONNECTIONID: {}".format(self._connectionCount))
+                print("POOLING ENABLED - CONNECTIONID: {}".format(self._connectionCount))
+                print("POOLING ENABLED - {}".format(self._connectionNumbers))
                 print("===========================================")
-                print(self._connectionNumbers)
-                print("===========================================")
+                print("")
                 conn = self._pool.pop()
             if self.debug:
                 s = 'ACQUIRE'
@@ -423,7 +424,6 @@ class DBAPI(DBConnection):
             threadName = ''
         msg = '%(n)2i%(threadName)s/%(name)s%(spaces)s%(sep)s %(s)s' % locals()
         self.debugWriter.write(msg)
-        print(msg)
 
     def _executeRetry(self, conn, cursor, query):
         if self.debug:

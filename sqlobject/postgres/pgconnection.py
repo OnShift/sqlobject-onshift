@@ -119,7 +119,6 @@ class PostgresConnection(DBAPI):
         DBAPI.__init__(self, **kw)
         # Disable Pooling for pgconnection
         # self._pool = None
-        self.debug = True
 
     @classmethod
     def _connectionFromParams(cls, user, password, host, port, path, args):
