@@ -363,9 +363,7 @@ class DBAPI(DBConnection):
         
         If the connection is closed, lets reconnect it.
         """
-        if self.tryEnsureConnectionOpen(conn).closed:
-            conn = self.getConnection()
-        return conn
+        return conn if not conn.closed else self.getConnection()
 
     def releaseConnection(self, conn, explicit=False):
         if self.debug and not self._pool:
