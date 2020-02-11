@@ -25,7 +25,7 @@ _connections = {}
 
 def _closeConnection(ref):
     conn = ref()
-    if conn is not None:
+    if conn is not None and
         conn.close()
 
 class ConsoleWriter:
@@ -331,6 +331,8 @@ class DBAPI(DBConnection):
         return val
 
     def getConnection(self):
+        if self._pool is None:
+            print("POOLING IS DISABLED")
         self._poolLock.acquire()
         try:
             if not self._pool:
@@ -344,9 +346,20 @@ class DBAPI(DBConnection):
                 if self._pool is not None:
                     s += ' pool=[%s]' % ', '.join([str(self._connectionNumbers[id(v)]) for v in self._pool])
                 self.printDebug(conn, s, 'Pool')
-            return conn
+
+            return self.tryEnsureConnectionOpen(conn)
         finally:
             self._poolLock.release()
+    
+    def tryEnsureConnectionOpen(self, conn):
+        """
+        This is gross. Some connection types have a closed prop that we can use to ensure the connection is active.
+        
+        If the connection is closed, lets reconnect it.
+        """
+        if hasattr(conn, 'closed') and self.tryEnsureConnectionOpen(conn).closed:
+            conn = self.makeConnection()
+        return conn
 
     def releaseConnection(self, conn, explicit=False):
         if self.debug:
@@ -363,17 +376,17 @@ class DBAPI(DBConnection):
             if self.autoCommit == 'exception':
                 if self.debug:
                     self.printDebug(conn, 'auto/exception', 'ROLLBACK')
-                conn.rollback()
+                self.tryEnsureConnectionOpen(conn).rollback()
                 raise Exception, 'Object used outside of a transaction; implicit COMMIT or ROLLBACK not allowed'
             elif self.autoCommit:
                 if self.debug:
                     self.printDebug(conn, 'auto', 'COMMIT')
                 if not getattr(conn, 'autocommit', False):
-                    conn.commit()
+                    self.tryEnsureConnectionOpen(conn).commit()
             else:
                 if self.debug:
                     self.printDebug(conn, 'auto', 'ROLLBACK')
-                conn.rollback()
+                self.tryEnsureConnectionOpen(conn).rollback()
         if self._pool is not None:
             if conn not in self._pool:
                 # @@: We can get duplicate releasing of connections with
@@ -381,7 +394,7 @@ class DBAPI(DBConnection):
                 # it happens)
                 self._pool.insert(0, conn)
         else:
-            conn.close()
+            self.tryEnsureConnectionOpen(conn).close()
 
     def printDebug(self, conn, s, name, type='query'):
         if name == 'Pool' and self.debug != 'Pool':
@@ -409,7 +422,7 @@ class DBAPI(DBConnection):
     def _query(self, conn, s):
         if self.debug:
             self.printDebug(conn, s, 'Query')
-        self._executeRetry(conn, conn.cursor(), s)
+        self._executeRetry(conn, self.tryEnsureConnectionOpen(conn).cursor(), s)
 
     def query(self, s):
         return self._runWithConnection(self._query, s)
@@ -417,7 +430,7 @@ class DBAPI(DBConnection):
     def _queryAll(self, conn, s):
         if self.debug:
             self.printDebug(conn, s, 'QueryAll')
-        c = conn.cursor()
+        c = self.tryEnsureConnectionOpen(conn).cursor()
         self._executeRetry(conn, c, s)
         value = c.fetchall()
         if self.debugOutput:
@@ -434,7 +447,7 @@ class DBAPI(DBConnection):
         """
         if self.debug:
             self.printDebug(conn, s, 'QueryAllDesc')
-        c = conn.cursor()
+        c = self.tryEnsureConnectionOpen(conn).cursor()
         self._executeRetry(conn, c, s)
         value = c.fetchall()
         if self.debugOutput:
@@ -447,7 +460,7 @@ class DBAPI(DBConnection):
     def _queryOne(self, conn, s):
         if self.debug:
             self.printDebug(conn, s, 'QueryOne')
-        c = conn.cursor()
+        c = self.tryEnsureConnectionOpen(conn).cursor()
         self._executeRetry(conn, c, s)
         value = c.fetchone()
         if self.debugOutput:
@@ -689,7 +702,7 @@ class DBAPI(DBConnection):
             self._pool[:] = []
             for conn in conns:
                 try:
-                    conn.close()
+                    self.tryEnsureConnectionOpen(conn).close()
                 except self.module.Error:
                     pass
             del conn
@@ -711,10 +724,10 @@ class Iteration(object):
         self.select = select
         self.keepConnection = keepConnection
         self.cursor = rawconn.cursor()
-        self.query = self.dbconn.queryForSelect(select)
-        if dbconn.debug:
-            dbconn.printDebug(rawconn, self.query, 'Select')
-        self.dbconn._executeRetry(self.rawconn, self.cursor, self.query)
+        self.query = self.dbself.conn.queryForSelect(select)
+        if dbself.conn.debug:
+            dbself.conn.printDebug(rawconn, self.query, 'Select')
+        self.dbself.conn._executeRetry(self.rawconn, self.cursor, self.query)
 
     def __iter__(self):
         return self
@@ -739,7 +752,7 @@ class Iteration(object):
             return
         self.query = None
         if not self.keepConnection:
-            self.dbconn.releaseConnection(self.rawconn)
+            self.dbself.conn.releaseConnection(self.rawconn)
         self.dbconn = self.rawconn = self.select = self.cursor = None
 
     def __del__(self):
@@ -952,7 +965,7 @@ class ConnectionHub(object):
         except AttributeError:
             old_conn = self.processConnection
             old_conn_is_threading = False
-        conn = old_conn.transaction()
+        conn = old_self.conn.transaction()
         if old_conn_is_threading:
             self.threadConnection = conn
         else:
@@ -961,10 +974,10 @@ class ConnectionHub(object):
             try:
                 value = func(*args, **kw)
             except:
-                conn.rollback()
+                self.conn.rollback()
                 raise
             else:
-                conn.commit(close=True)
+                self.conn.commit(close=True)
                 return value
         finally:
             if old_conn_is_threading:
