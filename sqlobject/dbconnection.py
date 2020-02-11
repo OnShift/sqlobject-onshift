@@ -349,7 +349,7 @@ class DBAPI(DBConnection):
                 self._connectionCount += 1
             else:
                 print("POOLING ENABLED - USING EXISTING CONNECTION")
-                print(f"                  CONNECTIONID: {self._connectionCount}")
+                print("                  CONNECTIONID: {}".format(self._connectionCount))
                 print("===========================================")
                 print(self._connectionNumbers)
                 print("===========================================")
