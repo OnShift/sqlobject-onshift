@@ -1,8 +1,8 @@
 
-version = '1.6.10'
+version = '1.6.11'
 major   = 1
 minor   = 6
-micro   = 10
+micro   = 11
 release_level = 'trunk'
 serial  = 0
 version_info = (major, minor, micro, release_level, serial)
