@@ -331,8 +331,15 @@ class DBAPI(DBConnection):
         return val
 
     def getConnection(self):
-        if self._pool is None:
-            print("POOLING IS DISABLED")
+        if self._pool:
+            return self.getPooledConnection()
+        else:
+            conn = self.makeConnection()
+            if self.debug:
+                print("POOLING DISABLED - CREATING CONNECTION")
+            return conn
+
+    def getPooledConnection(self):
         self._poolLock.acquire()
         try:
             if not self._pool:
@@ -356,11 +363,13 @@ class DBAPI(DBConnection):
         
         If the connection is closed, lets reconnect it.
         """
-        if hasattr(conn, 'closed') and self.tryEnsureConnectionOpen(conn).closed:
-            conn = self.makeConnection()
+        if self.tryEnsureConnectionOpen(conn).closed:
+            conn = self.getConnection()
         return conn
 
     def releaseConnection(self, conn, explicit=False):
+        if self.debug and not self._pool:
+            print("POOLING DISABLED - RELEASING CONNECTION")
         if self.debug:
             if explicit:
                 s = 'RELEASE (explicit)'
@@ -393,7 +402,7 @@ class DBAPI(DBConnection):
                 # it happens)
                 self._pool.insert(0, conn)
         else:
-            self.tryEnsureConnectionOpen(conn).close()
+            conn.close()
 
     def printDebug(self, conn, s, name, type='query'):
         if name == 'Pool' and self.debug != 'Pool':
