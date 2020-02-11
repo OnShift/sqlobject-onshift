@@ -343,10 +343,16 @@ class DBAPI(DBConnection):
         self._poolLock.acquire()
         try:
             if not self._pool:
+                print("POOLING ENABLED - CREATING NEW CONNECTION")
                 conn = self.makeConnection()
                 self._connectionNumbers[id(conn)] = self._connectionCount
                 self._connectionCount += 1
             else:
+                print("POOLING ENABLED - USING EXISTING CONNECTION")
+                print("                  CONNECTIONID: " + self._connectionCount)
+                print("===========================================")
+                print(self._connectionNumbers)
+                print("===========================================")
                 conn = self._pool.pop()
             if self.debug:
                 s = 'ACQUIRE'
@@ -366,8 +372,6 @@ class DBAPI(DBConnection):
         return conn if not conn.closed else self.getConnection()
 
     def releaseConnection(self, conn, explicit=False):
-        if self.debug and not self._pool:
-            print("POOLING DISABLED - RELEASING CONNECTION")
         if self.debug:
             if explicit:
                 s = 'RELEASE (explicit)'
