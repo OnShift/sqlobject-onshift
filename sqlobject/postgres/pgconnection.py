@@ -117,6 +117,8 @@ class PostgresConnection(DBAPI):
         self.schema = kw.pop('schema', None)
         self.dbEncoding = kw.pop("charset", None)
         DBAPI.__init__(self, **kw)
+        # disable "pooling" (keeping connections alive)
+        self._pool = None
 
     @classmethod
     def _connectionFromParams(cls, user, password, host, port, path, args):
