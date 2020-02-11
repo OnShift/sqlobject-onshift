@@ -25,7 +25,7 @@ _connections = {}
 
 def _closeConnection(ref):
     conn = ref()
-    if conn is not None and
+    if conn is not None:
         conn.close()
 
 class ConsoleWriter:
