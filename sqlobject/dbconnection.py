@@ -419,6 +419,7 @@ class DBAPI(DBConnection):
             threadName = ''
         msg = '%(n)2i%(threadName)s/%(name)s%(spaces)s%(sep)s %(s)s' % locals()
         self.debugWriter.write(msg)
+        print(msg)
 
     def _executeRetry(self, conn, cursor, query):
         if self.debug:
