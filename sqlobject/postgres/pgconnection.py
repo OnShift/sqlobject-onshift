@@ -118,7 +118,7 @@ class PostgresConnection(DBAPI):
         self.dbEncoding = kw.pop("charset", None)
         DBAPI.__init__(self, **kw)
         # Disable Pooling for pgconnection
-        # self._pool = None
+        self._pool = None
         self.debug = True
 
     @classmethod

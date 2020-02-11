@@ -331,7 +331,7 @@ class DBAPI(DBConnection):
         return val
 
     def getConnection(self):
-        if self._pool:
+        if self._pool is not None:
             return self.getPooledConnection()
         else:
             conn = self.makeConnection()
