@@ -346,7 +346,6 @@ class DBAPI(DBConnection):
                 if self._pool is not None:
                     s += ' pool=[%s]' % ', '.join([str(self._connectionNumbers[id(v)]) for v in self._pool])
                 self.printDebug(conn, s, 'Pool')
-
             return self.tryEnsureConnectionOpen(conn)
         finally:
             self._poolLock.release()
@@ -724,10 +723,10 @@ class Iteration(object):
         self.select = select
         self.keepConnection = keepConnection
         self.cursor = rawconn.cursor()
-        self.query = self.dbself.conn.queryForSelect(select)
-        if dbself.conn.debug:
-            dbself.conn.printDebug(rawconn, self.query, 'Select')
-        self.dbself.conn._executeRetry(self.rawconn, self.cursor, self.query)
+        self.query = self.dbconn.queryForSelect(select)
+        if dbconn.debug:
+            dbconn.printDebug(rawconn, self.query, 'Select')
+        self.dbconn._executeRetry(self.rawconn, self.cursor, self.query)
 
     def __iter__(self):
         return self
@@ -752,7 +751,7 @@ class Iteration(object):
             return
         self.query = None
         if not self.keepConnection:
-            self.dbself.conn.releaseConnection(self.rawconn)
+            self.dbconn.releaseConnection(self.rawconn)
         self.dbconn = self.rawconn = self.select = self.cursor = None
 
     def __del__(self):
@@ -965,7 +964,7 @@ class ConnectionHub(object):
         except AttributeError:
             old_conn = self.processConnection
             old_conn_is_threading = False
-        conn = old_self.conn.transaction()
+        conn = old_conn.transaction()
         if old_conn_is_threading:
             self.threadConnection = conn
         else:
@@ -974,10 +973,10 @@ class ConnectionHub(object):
             try:
                 value = func(*args, **kw)
             except:
-                self.conn.rollback()
+                conn.rollback()
                 raise
             else:
-                self.conn.commit(close=True)
+                conn.commit(close=True)
                 return value
         finally:
             if old_conn_is_threading:
