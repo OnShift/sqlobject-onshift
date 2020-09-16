@@ -344,6 +344,20 @@ class DBAPI(DBConnection):
                 if self._pool is not None:
                     s += ' pool=[%s]' % ', '.join([str(self._connectionNumbers[id(v)]) for v in self._pool])
                 self.printDebug(conn, s, 'Pool')
+                
+            # Safeguard to make sure we dont return a closed connection.
+            # If the connection is closed, delete it and start recursive execution.
+            if hasattr(conn, 'closed') and conn.closed:
+                if self.debug:
+                    s = 'ACQUIRED CONNECTION IS CLOSED'
+                    if self._pool is not None:
+                        s += ' pool=[%s]' % ', '.join([str(self._connectionNumbers[id(v)]) for v in self._pool])
+                    self.printDebug(conn, s, 'Pool')
+
+                del conn
+                self._poolLock.release()
+                return self.getConnection()
+
             return conn
         finally:
             self._poolLock.release()
